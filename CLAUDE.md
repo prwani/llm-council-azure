@@ -11,16 +11,29 @@ LLM Council is a 3-stage deliberation system where multiple LLMs collaboratively
 ### Backend Structure (`backend/`)
 
 **`config.py`**
-- Contains `COUNCIL_MODELS` (list of OpenRouter model identifiers)
+- Contains `PROVIDER` flag to switch between "openrouter" and "azure"
+- Contains `COUNCIL_MODELS` (list of model identifiers - format depends on provider)
 - Contains `CHAIRMAN_MODEL` (model that synthesizes final answer)
-- Uses environment variable `OPENROUTER_API_KEY` from `.env`
+- For OpenRouter: Uses environment variable `OPENROUTER_API_KEY` from `.env`
+- For Azure: Uses `AZURE_ENDPOINT` environment variable
 - Backend runs on **port 8001** (NOT 8000 - user had another app on 8000)
 
 **`openrouter.py`**
-- `query_model()`: Single async model query
-- `query_models_parallel()`: Parallel queries using `asyncio.gather()`
+- **Routes requests** to OpenRouter or Azure based on `PROVIDER` config
+- `query_model()`: Single async model query (routes to appropriate provider)
+- `query_models_parallel()`: Parallel queries using `asyncio.gather()` (routes to appropriate provider)
+- `_query_model_openrouter()`: Internal OpenRouter implementation
+- `_query_models_parallel_openrouter()`: Internal OpenRouter parallel implementation
 - Returns dict with 'content' and optional 'reasoning_details'
 - Graceful degradation: returns None on failure, continues with successful responses
+
+**`azure_foundry.py`**
+- Azure Foundry API client using OpenAI SDK
+- Uses Azure Entra (DefaultAzureCredential) for authentication
+- `query_model()`: Single async model query to Azure Foundry endpoint
+- `query_models_parallel()`: Parallel queries to Azure Foundry models
+- Same interface as OpenRouter for seamless switching
+- Uses OpenAI chat completions format (compatible with Azure Foundry)
 
 **`council.py`** - The Core Logic
 - `stage1_collect_responses()`: Parallel queries to all council models
@@ -123,7 +136,18 @@ All backend modules use relative imports (e.g., `from .config import ...`) not a
 All ReactMarkdown components must be wrapped in `<div className="markdown-content">` for proper spacing. This class is defined globally in `index.css`.
 
 ### Model Configuration
-Models are hardcoded in `backend/config.py`. Chairman can be same or different from council members. The current default is Gemini as chairman per user preference.
+Models are configured in `backend/config.py`. Chairman can be same or different from council members. The current default is Gemini as chairman per user preference.
+
+**Provider-Specific Configuration:**
+- **OpenRouter**: Use format `"provider/model-name"` (e.g., `"openai/gpt-5.1"`)
+- **Azure Foundry**: Use deployment names as configured in your Azure resource (e.g., `"grok-3"`)
+
+### Azure Foundry Authentication
+Azure Foundry uses Azure Entra (formerly Azure AD) authentication via `DefaultAzureCredential`:
+- Automatically tries multiple authentication methods in order
+- Common methods: Azure CLI login (`az login`), managed identity, environment variables
+- Requires `https://cognitiveservices.azure.com/.default` scope
+- See [Azure Identity documentation](https://learn.microsoft.com/en-us/python/api/azure-identity/azure.identity.defaultazurecredential) for details
 
 ## Common Gotchas
 
@@ -131,6 +155,8 @@ Models are hardcoded in `backend/config.py`. Chairman can be same or different f
 2. **CORS Issues**: Frontend must match allowed origins in `main.py` CORS middleware
 3. **Ranking Parse Failures**: If models don't follow format, fallback regex extracts any "Response X" patterns in order
 4. **Missing Metadata**: Metadata is ephemeral (not persisted), only available in API responses
+5. **Azure Authentication**: Ensure you're logged in via `az login` or have proper service principal credentials set
+6. **Model Names**: OpenRouter uses `provider/model` format, Azure uses deployment names - don't mix them up!
 
 ## Future Enhancement Ideas
 

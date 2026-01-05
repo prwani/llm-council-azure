@@ -32,21 +32,47 @@ npm install
 cd ..
 ```
 
-### 2. Configure API Key
+### 2. Configure API Provider
+
+The application supports two providers: **OpenRouter** (default) and **Azure Foundry**.
+
+#### Option A: OpenRouter (Default)
 
 Create a `.env` file in the project root:
 
 ```bash
+PROVIDER=openrouter
 OPENROUTER_API_KEY=sk-or-v1-...
 ```
 
 Get your API key at [openrouter.ai](https://openrouter.ai/). Make sure to purchase the credits you need, or sign up for automatic top up.
 
+#### Option B: Azure Foundry
+
+Create a `.env` file in the project root:
+
+```bash
+PROVIDER=azure
+AZURE_ENDPOINT=https://llm-council-foundry.openai.azure.com/openai/v1/
+```
+
+**Azure Authentication:**
+Azure Foundry uses Azure Entra (formerly Azure AD) authentication via `DefaultAzureCredential`. Make sure you are authenticated with Azure CLI or have appropriate environment variables set:
+
+```bash
+# Login with Azure CLI
+az login
+```
+
+Or set environment variables for service principal authentication. See [Azure Identity documentation](https://learn.microsoft.com/en-us/python/api/azure-identity/azure.identity.defaultazurecredential) for more details.
+
 ### 3. Configure Models (Optional)
 
 Edit `backend/config.py` to customize the council:
 
+**For OpenRouter:**
 ```python
+PROVIDER = "openrouter"
 COUNCIL_MODELS = [
     "openai/gpt-5.1",
     "google/gemini-3-pro-preview",
@@ -56,6 +82,23 @@ COUNCIL_MODELS = [
 
 CHAIRMAN_MODEL = "google/gemini-3-pro-preview"
 ```
+
+**For Azure Foundry:**
+```python
+PROVIDER = "azure"
+AZURE_ENDPOINT = "https://llm-council-foundry.openai.azure.com/openai/v1/"
+COUNCIL_MODELS = [
+    "grok-3",           # Azure deployment name
+    "gemini-3-pro",     # Azure deployment name
+    "claude-sonnet-4",  # Azure deployment name
+    "gpt-5",            # Azure deployment name
+]
+
+CHAIRMAN_MODEL = "gemini-3-pro"
+```
+
+**Note:** For Azure Foundry, use deployment names as they appear in your Azure Foundry resource, not the full model identifiers.
+
 
 ## Running the Application
 
