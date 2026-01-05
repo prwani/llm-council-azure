@@ -1,5 +1,6 @@
 """Azure Foundry API client for making LLM requests."""
 
+import asyncio
 from openai import AsyncOpenAI
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from typing import List, Dict, Any, Optional
@@ -85,8 +86,6 @@ async def query_models_parallel(
     Returns:
         Dict mapping model identifier to response dict (or None if failed)
     """
-    import asyncio
-
     # Create tasks for all models
     tasks = [query_model(model, messages) for model in models]
 

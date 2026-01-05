@@ -1,5 +1,6 @@
 """API client for making LLM requests - routes to OpenRouter or Azure Foundry."""
 
+import asyncio
 import httpx
 from typing import List, Dict, Any, Optional
 from .config import OPENROUTER_API_KEY, OPENROUTER_API_URL, PROVIDER
@@ -123,8 +124,6 @@ async def _query_models_parallel_openrouter(
     Returns:
         Dict mapping model identifier to response dict (or None if failed)
     """
-    import asyncio
-
     # Create tasks for all models
     tasks = [_query_model_openrouter(model, messages) for model in models]
 
