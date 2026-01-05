@@ -64,7 +64,7 @@ async def query_model(
         
         return {
             'content': message.content,
-            'reasoning_details': None  # Azure Foundry may not support this
+            'reasoning_details': None  # Azure Foundry typically does not support reasoning_details in standard responses
         }
 
     except Exception as e:
