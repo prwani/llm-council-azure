@@ -22,7 +22,7 @@ def _get_client() -> AsyncOpenAI:
         )
         _client = AsyncOpenAI(
             base_url=AZURE_ENDPOINT,
-            api_key=_token_provider
+            azure_ad_token_provider=_token_provider
         )
     
     return _client
@@ -53,6 +53,11 @@ async def query_model(
             messages=messages,
             timeout=timeout,
         )
+        
+        # Validate response has choices
+        if not response.choices or len(response.choices) == 0:
+            print(f"Error: Azure Foundry model {model} returned no choices")
+            return None
         
         message = response.choices[0].message
         

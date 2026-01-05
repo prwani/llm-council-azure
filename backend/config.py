@@ -18,6 +18,7 @@ AZURE_ENDPOINT = os.getenv("AZURE_ENDPOINT", "https://llm-council-foundry.openai
 # Council members - list of model identifiers
 # For OpenRouter: use format "provider/model-name" (e.g., "openai/gpt-5.1")
 # For Azure: use deployment names (e.g., "grok-3")
+# IMPORTANT: Change these to match your selected PROVIDER!
 COUNCIL_MODELS = [
     "openai/gpt-5.1",
     "google/gemini-3-pro-preview",
@@ -26,6 +27,7 @@ COUNCIL_MODELS = [
 ]
 
 # Chairman model - synthesizes final response
+# IMPORTANT: Use the appropriate format for your selected PROVIDER!
 CHAIRMAN_MODEL = "google/gemini-3-pro-preview"
 
 # Data directory for conversation storage
