@@ -1,0 +1,19 @@
+[Unit]
+Description=LLM Council Backend API
+After=network.target
+
+[Service]
+Type=simple
+User=azureuser
+Group=azureuser
+WorkingDirectory=/home/azureuser/llm-council-azure
+Environment="PATH=/home/azureuser/.local/bin:/home/azureuser/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="PYTHONUNBUFFERED=1"
+ExecStart=/home/azureuser/.cargo/bin/uv run uvicorn backend.main:app --host 0.0.0.0 --port 8000 --log-level info
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
