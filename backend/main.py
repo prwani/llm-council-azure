@@ -14,10 +14,11 @@ from .council import run_full_council, generate_conversation_title, stage1_colle
 
 app = FastAPI(title="LLM Council API")
 
-# Enable CORS for local development
+# Enable CORS for development and production
+# Allow all origins since frontend and backend are on same server (nginx handles this)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -56,13 +57,13 @@ async def root():
     return {"status": "ok", "service": "LLM Council API"}
 
 
-@app.get("/api/conversations", response_model=List[ConversationMetadata])
+@app.get("/conversations", response_model=List[ConversationMetadata])
 async def list_conversations():
     """List all conversations (metadata only)."""
     return storage.list_conversations()
 
 
-@app.post("/api/conversations", response_model=Conversation)
+@app.post("/conversations", response_model=Conversation)
 async def create_conversation(request: CreateConversationRequest):
     """Create a new conversation."""
     conversation_id = str(uuid.uuid4())
@@ -70,7 +71,7 @@ async def create_conversation(request: CreateConversationRequest):
     return conversation
 
 
-@app.get("/api/conversations/{conversation_id}", response_model=Conversation)
+@app.get("/conversations/{conversation_id}", response_model=Conversation)
 async def get_conversation(conversation_id: str):
     """Get a specific conversation with all its messages."""
     conversation = storage.get_conversation(conversation_id)
@@ -79,7 +80,7 @@ async def get_conversation(conversation_id: str):
     return conversation
 
 
-@app.post("/api/conversations/{conversation_id}/message")
+@app.post("/conversations/{conversation_id}/message")
 async def send_message(conversation_id: str, request: SendMessageRequest):
     """
     Send a message and run the 3-stage council process.
@@ -123,7 +124,7 @@ async def send_message(conversation_id: str, request: SendMessageRequest):
     }
 
 
-@app.post("/api/conversations/{conversation_id}/message/stream")
+@app.post("/conversations/{conversation_id}/message/stream")
 async def send_message_stream(conversation_id: str, request: SendMessageRequest):
     """
     Send a message and stream the 3-stage council process.
