@@ -4,6 +4,18 @@ import httpx
 from typing import List, Dict, Any, Optional
 from .config import OPENROUTER_API_KEY, OPENROUTER_API_URL, PROVIDER
 
+# Lazy-load Azure module only if needed
+_azure_foundry = None
+
+
+def _get_azure_module():
+    """Lazy load Azure Foundry module."""
+    global _azure_foundry
+    if _azure_foundry is None:
+        from . import azure_foundry as af
+        _azure_foundry = af
+    return _azure_foundry
+
 
 async def query_model(
     model: str,
@@ -22,7 +34,7 @@ async def query_model(
         Response dict with 'content' and optional 'reasoning_details', or None if failed
     """
     if PROVIDER == "azure":
-        from . import azure_foundry
+        azure_foundry = _get_azure_module()
         return await azure_foundry.query_model(model, messages, timeout)
     else:
         return await _query_model_openrouter(model, messages, timeout)
@@ -43,7 +55,7 @@ async def query_models_parallel(
         Dict mapping model identifier to response dict (or None if failed)
     """
     if PROVIDER == "azure":
-        from . import azure_foundry
+        azure_foundry = _get_azure_module()
         return await azure_foundry.query_models_parallel(models, messages)
     else:
         return await _query_models_parallel_openrouter(models, messages)
