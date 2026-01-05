@@ -8,22 +8,29 @@ from .config import AZURE_ENDPOINT
 
 
 # Create Azure credential and token provider
-_token_provider = None
+_credential = None
 _client = None
 
 
 def _get_client() -> AsyncOpenAI:
     """Get or create the Azure OpenAI client."""
-    global _token_provider, _client
+    global _credential, _client
     
     if _client is None:
-        _token_provider = get_bearer_token_provider(
-            DefaultAzureCredential(), 
+        _credential = DefaultAzureCredential()
+        token_provider = get_bearer_token_provider(
+            _credential, 
             "https://cognitiveservices.azure.com/.default"
         )
+        
+        # For Azure AI Foundry, use AsyncOpenAI with api_key set to token
+        # The token provider returns a callable that gets the current token
+        token = token_provider()
+        
         _client = AsyncOpenAI(
             base_url=AZURE_ENDPOINT,
-            azure_ad_token_provider=_token_provider
+            api_key=token,
+            default_headers={"Authorization": f"Bearer {token}"}
         )
     
     return _client

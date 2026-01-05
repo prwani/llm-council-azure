@@ -1,8 +1,13 @@
 """3-stage LLM Council orchestration."""
 
 from typing import List, Dict, Any, Tuple
-from .openrouter import query_models_parallel, query_model
-from .config import COUNCIL_MODELS, CHAIRMAN_MODEL
+from .config import COUNCIL_MODELS, CHAIRMAN_MODEL, PROVIDER
+
+# Import the appropriate provider based on configuration
+if PROVIDER == "azure":
+    from .azure_foundry import query_models_parallel, query_model
+else:
+    from .openrouter import query_models_parallel, query_model
 
 
 async def stage1_collect_responses(user_query: str) -> List[Dict[str, Any]]:
