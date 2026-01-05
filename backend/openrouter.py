@@ -1,11 +1,55 @@
-"""OpenRouter API client for making LLM requests."""
+"""API client for making LLM requests - routes to OpenRouter or Azure Foundry."""
 
 import httpx
 from typing import List, Dict, Any, Optional
-from .config import OPENROUTER_API_KEY, OPENROUTER_API_URL
+from .config import OPENROUTER_API_KEY, OPENROUTER_API_URL, PROVIDER
 
 
 async def query_model(
+    model: str,
+    messages: List[Dict[str, str]],
+    timeout: float = 120.0
+) -> Optional[Dict[str, Any]]:
+    """
+    Query a single model via configured provider (OpenRouter or Azure Foundry).
+
+    Args:
+        model: Model identifier (OpenRouter format or Azure deployment name)
+        messages: List of message dicts with 'role' and 'content'
+        timeout: Request timeout in seconds
+
+    Returns:
+        Response dict with 'content' and optional 'reasoning_details', or None if failed
+    """
+    if PROVIDER == "azure":
+        from . import azure_foundry
+        return await azure_foundry.query_model(model, messages, timeout)
+    else:
+        return await _query_model_openrouter(model, messages, timeout)
+
+
+async def query_models_parallel(
+    models: List[str],
+    messages: List[Dict[str, str]]
+) -> Dict[str, Optional[Dict[str, Any]]]:
+    """
+    Query multiple models in parallel via configured provider.
+
+    Args:
+        models: List of model identifiers
+        messages: List of message dicts to send to each model
+
+    Returns:
+        Dict mapping model identifier to response dict (or None if failed)
+    """
+    if PROVIDER == "azure":
+        from . import azure_foundry
+        return await azure_foundry.query_models_parallel(models, messages)
+    else:
+        return await _query_models_parallel_openrouter(models, messages)
+
+
+async def _query_model_openrouter(
     model: str,
     messages: List[Dict[str, str]],
     timeout: float = 120.0
@@ -53,12 +97,12 @@ async def query_model(
         return None
 
 
-async def query_models_parallel(
+async def _query_models_parallel_openrouter(
     models: List[str],
     messages: List[Dict[str, str]]
 ) -> Dict[str, Optional[Dict[str, Any]]]:
     """
-    Query multiple models in parallel.
+    Query multiple models in parallel via OpenRouter.
 
     Args:
         models: List of OpenRouter model identifiers
@@ -70,7 +114,7 @@ async def query_models_parallel(
     import asyncio
 
     # Create tasks for all models
-    tasks = [query_model(model, messages) for model in models]
+    tasks = [_query_model_openrouter(model, messages) for model in models]
 
     # Wait for all to complete
     responses = await asyncio.gather(*tasks)
