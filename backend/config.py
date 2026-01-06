@@ -22,7 +22,7 @@ AZURE_ENDPOINT = os.getenv("AZURE_ENDPOINT", "https://llm-council-foundry.openai
 # The defaults below are for OpenRouter. If using Azure, replace with your deployment names.
 COUNCIL_MODELS = [
     "DeepSeek-V3.2",
-    "gpt-5.2-chat",
+    "Kimi-K2-Thinking",
     "Mistral-Large-3",
     "grok-3",
 ]
@@ -30,7 +30,7 @@ COUNCIL_MODELS = [
 # Chairman model - synthesizes final response
 # IMPORTANT: Use the appropriate format for your selected PROVIDER!
 # The default below is for OpenRouter. If using Azure, replace with your deployment name.
-CHAIRMAN_MODEL = "gpt-5.2-chat"
+CHAIRMAN_MODEL = "gpt-4.1"
 
 # Data directory for conversation storage
 DATA_DIR = "data/conversations"

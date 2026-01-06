@@ -2,10 +2,10 @@
  * API client for the LLM Council backend.
  */
 
-// Use relative path in production, absolute in development
-const API_BASE = import.meta.env.MODE === 'production' 
-  ? '/api' 
-  : 'http://localhost:8000';
+// Use environment variable if set, otherwise fallback to localhost for development
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+console.log('API_BASE configured as:', API_BASE);
 
 export const api = {
   /**
