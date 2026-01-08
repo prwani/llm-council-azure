@@ -82,8 +82,16 @@ if [ "$PROVIDER" = "openrouter" ] && [ -z "$OPENROUTER_API_KEY" ]; then
     echo ""
 fi
 
-if [ "$PROVIDER" = "azure" ] && [ -z "$AZURE_ENDPOINT" ]; then
-    read -p "Enter Azure Foundry Endpoint: " AZURE_ENDPOINT
+if [ "$PROVIDER" = "azure" ]; then
+    if [ -z "$AZURE_ENDPOINT" ]; then
+        read -p "Enter Azure Foundry Endpoint: " AZURE_ENDPOINT
+    fi
+    if [ -z "$FOUNDRY_RESOURCE_GROUP" ]; then
+        read -p "Enter Azure Foundry Resource Group: " FOUNDRY_RESOURCE_GROUP
+    fi
+    if [ -z "$FOUNDRY_NAME" ]; then
+        read -p "Enter Azure Foundry Resource Name: " FOUNDRY_NAME
+    fi
 fi
 
 # Image tags
@@ -158,6 +166,13 @@ ACR_PASSWORD=$(az acr credential show --name "$ACR_NAME" --query passwords[0].va
 
 # Deploy backend container app
 print_message "$BLUE" "Deploying backend container app..."
+
+# Add managed identity flag if using Azure provider
+IDENTITY_FLAG=""
+if [ "$PROVIDER" = "azure" ]; then
+    IDENTITY_FLAG="--system-assigned"
+fi
+
 az containerapp create \
     --name "$BACKEND_APP_NAME" \
     --resource-group "$RESOURCE_GROUP" \
@@ -176,7 +191,40 @@ az containerapp create \
         "PROVIDER=${PROVIDER}" \
         "OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}" \
         "AZURE_ENDPOINT=${AZURE_ENDPOINT:-}" \
+    $IDENTITY_FLAG \
     --output none
+
+# Configure managed identity for Azure Foundry access
+if [ "$PROVIDER" = "azure" ]; then
+    print_message "$BLUE" "Configuring managed identity for Azure Foundry access..."
+    
+    # Get the managed identity principal ID
+    IDENTITY_ID=$(az containerapp show \
+        --name "$BACKEND_APP_NAME" \
+        --resource-group "$RESOURCE_GROUP" \
+        --query identity.principalId \
+        -o tsv)
+    
+    print_message "$BLUE" "Managed Identity Principal ID: $IDENTITY_ID"
+    
+    # Wait a few seconds for the identity to propagate
+    sleep 10
+    
+    # Get subscription ID
+    SUBSCRIPTION_ID=$(az account show --query id -o tsv)
+    
+    # Grant Cognitive Services User role to the managed identity
+    print_message "$BLUE" "Granting 'Cognitive Services User' role to managed identity..."
+    az role assignment create \
+        --assignee "$IDENTITY_ID" \
+        --role "Cognitive Services User" \
+        --scope "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$FOUNDRY_RESOURCE_GROUP/providers/Microsoft.CognitiveServices/accounts/$FOUNDRY_NAME" \
+        --output none
+    
+    # Verify the role assignment
+    print_message "$GREEN" "✓ Role assignment created successfully"
+    az role assignment list --assignee "$IDENTITY_ID" --output table
+fi
 
 BACKEND_URL=$(az containerapp show \
     --name "$BACKEND_APP_NAME" \

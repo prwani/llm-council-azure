@@ -24,13 +24,13 @@ COUNCIL_MODELS = [
     "DeepSeek-V3.2",
     "Kimi-K2-Thinking",
     "Mistral-Large-3",
-    "grok-3",
+    "grok-4",
 ]
 
 # Chairman model - synthesizes final response
 # IMPORTANT: Use the appropriate format for your selected PROVIDER!
 # The default below is for OpenRouter. If using Azure, replace with your deployment name.
-CHAIRMAN_MODEL = "gpt-4.1"
+CHAIRMAN_MODEL = "gpt-5.2"
 
 # Data directory for conversation storage
 DATA_DIR = "data/conversations"

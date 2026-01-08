@@ -1,6 +1,8 @@
 # LLM Council
 
-The idea of this repo is that instead of asking a question to your favorite LLM provider (e.g. OpenAI GPT 5.1, Google Gemini 3.0 Pro, Anthropic Claude Sonnet 4.5, xAI Grok 4, eg.c), you can group them into your "LLM Council". This repo is a simple, local web app that essentially looks like ChatGPT except it uses OpenRouter to send your query to multiple LLMs, it then asks them to review and rank each other's work, and finally a Chairman LLM produces the final response.
+> **Note:** This is a fork of Karpathy's [llm-council](https://github.com/karpathy/llm-council) with added support for Microsoft  Foundry and Azure deployment options.
+
+The idea of this repo is that instead of asking a question to your favorite LLM provider (e.g. OpenAI GPT 5.2, Mistral Large 3, Deepseek, Kimi K2, xAI Grok 4 etc.), you can group them into your "LLM Council". This repo is a simple, local web app that essentially looks like ChatGPT except it uses OpenRouter to send your query to multiple LLMs, it then asks them to review and rank each other's work, and finally a Chairman LLM produces the final response.
 
 In a bit more detail, here is what happens when you submit a query:
 
@@ -32,7 +34,7 @@ cd ..
 
 ### 2. Configure API Provider
 
-The application supports two providers: **OpenRouter** (default) and **Azure Foundry**.
+The application supports two providers: **OpenRouter** (default) and **Microsoft Foundry**.
 
 #### Option A: OpenRouter (Default)
 
@@ -45,7 +47,7 @@ OPENROUTER_API_KEY=sk-or-v1-...
 
 Get your API key at [openrouter.ai](https://openrouter.ai/). Make sure to purchase the credits you need, or sign up for automatic top up.
 
-#### Option B: Azure Foundry
+#### Option B: Microsoft Foundry
 
 Create a `.env` file in the project root:
 
@@ -55,7 +57,7 @@ AZURE_ENDPOINT=https://llm-council-foundry.openai.azure.com/openai/v1/
 ```
 
 **Azure Authentication:**
-Azure Foundry uses Azure Entra (formerly Azure AD) authentication via `DefaultAzureCredential`. Make sure you are authenticated with Azure CLI or have appropriate environment variables set:
+Microsoft Foundry uses Azure Entra (formerly Azure AD) authentication via `DefaultAzureCredential`. Make sure you are authenticated with Azure CLI or have appropriate environment variables set:
 
 ```bash
 # Login with Azure CLI
@@ -72,30 +74,30 @@ Edit `backend/config.py` to customize the council:
 ```python
 PROVIDER = "openrouter"
 COUNCIL_MODELS = [
-    "openai/gpt-5.1",
-    "google/gemini-3-pro-preview",
-    "anthropic/claude-sonnet-4.5",
-    "x-ai/grok-4",
+    "DeepSeek-V3.2",
+    "Kimi-K2-Thinking",
+    "Mistral-Large-3",
+    "grok-4",
 ]
 
-CHAIRMAN_MODEL = "google/gemini-3-pro-preview"
+CHAIRMAN_MODEL = "gpt-5.2"
 ```
 
-**For Azure Foundry:**
+**For Microsoft Foundry:**
 ```python
 PROVIDER = "azure"
 AZURE_ENDPOINT = "https://llm-council-foundry.openai.azure.com/openai/v1/"
 COUNCIL_MODELS = [
-    "grok-3",           # Azure deployment name
-    "gemini-3-pro",     # Azure deployment name
-    "claude-sonnet-4",  # Azure deployment name
-    "gpt-5",            # Azure deployment name
+    "deepseek-v3",      # Azure deployment name
+    "kimi-k2",          # Azure deployment name
+    "mistral-large-3",  # Azure deployment name
+    "grok-4",           # Azure deployment name
 ]
 
-CHAIRMAN_MODEL = "gemini-3-pro"
+CHAIRMAN_MODEL = "gpt-5"
 ```
 
-**Note:** For Azure Foundry, use deployment names as they appear in your Azure Foundry resource, not the full model identifiers.
+**Note:** For Microsoft Foundry, use deployment names as they appear in your Microsoft Foundry resource, not the full model identifiers.
 
 
 ## Running the Application
@@ -119,6 +121,68 @@ npm run dev
 ```
 
 Then open http://localhost:5173 in your browser.
+
+## Deploying to Azure Container Apps
+
+The application can be deployed to Azure Container Apps for production use. The deployment scripts are located in the `scripts/deploy-container-app/` directory.
+
+### Prerequisites
+
+- Azure CLI installed and authenticated (`az login`)
+- Docker installed (for building container images)
+- An Azure subscription with appropriate permissions
+
+### Deployment Steps
+
+1. **Navigate to the deployment directory:**
+   ```bash
+   cd scripts/deploy-container-app
+   ```
+
+2. **Configure your deployment:**
+   Edit the `deploy.sh` script to set your Azure resource names (resource group, container registry, container app environment, etc.).
+
+3. **Deploy the application:**
+   ```bash
+   ./deploy.sh
+   ```
+
+   This script will:
+   - Create an Azure Resource Group
+   - Create an Azure Container Registry (ACR)
+   - Build and push Docker images for both backend and frontend
+   - Create an Azure Container Apps environment
+   - Deploy both containers to Azure Container Apps
+   - Configure environment variables and ingress settings
+
+4. **Access your application:**
+   After deployment, the script will output the URL of your deployed application.
+
+### Environment Variables for Azure Deployment
+
+When deploying to Azure Container Apps, make sure to set the following environment variables in the deployment configuration:
+
+- `PROVIDER`: Set to `azure` or `openrouter`
+- `AZURE_ENDPOINT`: Your Microsoft Foundry endpoint (if using Azure)
+- `OPENROUTER_API_KEY`: Your OpenRouter API key (if using OpenRouter)
+
+For Microsoft Foundry, the application will use Managed Identity for authentication when deployed to Container Apps.
+
+### Updating the Deployment
+
+To update an existing deployment:
+```bash
+cd scripts/deploy-container-app
+./update.sh
+```
+
+### Cleanup
+
+To remove all deployed resources:
+```bash
+cd scripts/deploy-container-app
+./cleanup.sh
+```
 
 ## Tech Stack
 

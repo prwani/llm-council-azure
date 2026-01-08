@@ -88,9 +88,11 @@ export ACR_NAME="llmcouncilacr"
 export ENVIRONMENT_NAME="llm-council-env"
 export PROVIDER="openrouter"
 export OPENROUTER_API_KEY="your-key-here"
-# or for Azure
+# or for Azure (with managed identity)
 export PROVIDER="azure"
 export AZURE_ENDPOINT="https://your-foundry.openai.azure.com/openai/v1/"
+export FOUNDRY_RESOURCE_GROUP="your-foundry-rg"
+export FOUNDRY_NAME="your-foundry-name"
 ```
 
 ### Optional Variables
@@ -238,12 +240,45 @@ az containerapp hostname bind \
 - [Dockerfile Best Practices](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/)
 - [Azure CLI Reference](https://learn.microsoft.com/cli/azure/)
 
+## Managed Identity for Azure Foundry
+
+When using Azure AI Foundry as the provider (`PROVIDER=azure`), the deployment script automatically:
+
+1. **Creates a system-assigned managed identity** for the backend container app
+2. **Grants the "Cognitive Services User" role** to access your Azure Foundry resource
+3. **Eliminates the need for API keys** - authentication happens via Azure identity
+
+You'll be prompted for:
+- **AZURE_ENDPOINT**: Your Foundry endpoint (e.g., `https://your-foundry.openai.azure.com/openai/v1/`)
+- **FOUNDRY_RESOURCE_GROUP**: The resource group containing your Foundry resource
+- **FOUNDRY_NAME**: The name of your Azure Foundry resource
+
+The backend application will use `DefaultAzureCredential` to automatically authenticate using the managed identity.
+
+### Manual Role Assignment (if needed)
+
+If you need to manually grant access later:
+
+```bash
+# Get the managed identity principal ID
+IDENTITY_ID=$(az containerapp show \
+    --name llm-council-backend \
+    --resource-group $RESOURCE_GROUP \
+    --query identity.principalId -o tsv)
+
+# Grant access to Foundry
+az role assignment create \
+    --assignee $IDENTITY_ID \
+    --role "Cognitive Services User" \
+    --scope "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$FOUNDRY_RESOURCE_GROUP/providers/Microsoft.CognitiveServices/accounts/$FOUNDRY_NAME"
+```
+
 ## Security Considerations
 
 1. **API Keys**: Never commit API keys to version control
 2. **ACR Credentials**: Stored securely by Azure Container Apps
 3. **HTTPS**: All external ingress is HTTPS by default
-4. **Managed Identity**: Consider using Azure Managed Identity instead of API keys for Azure services
+4. **Managed Identity**: ✅ **Automatically configured** for Azure Foundry when using `PROVIDER=azure`
 5. **Secrets**: Use Container Apps secrets for sensitive data
 
 To use secrets instead of environment variables:
